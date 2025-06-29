@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Router } from "express";
 import controller from '../moviesControllers/moviesControllers.js'
 
 const router = express.Router()
@@ -7,6 +7,7 @@ const router = express.Router()
 router.get('/', controller.index)
 //rotta show
 router.get('/:id', controller.show)
+
 
 
 

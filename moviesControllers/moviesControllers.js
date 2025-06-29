@@ -3,17 +3,26 @@ import connection from '../data/movies_db.js';
 
 //index 
 const index = (req, res) => {
-    console.log(req.imagePath)
+    const search = req.query.search?.toLowerCase();
 
-    const sql = `
+    let sql = `
                 SELECT *
                 FROM movies
                 `
-    connection.query(sql, (err, results) => {
+    const params = [];
+
+    if(search) {
+
+
+        sql += ` WHERE movies.title LIKE ?`
+        params.push(`%${search}%`)
+    }
+    
+    connection.query(sql, params, (err, results) => {
         if (err) {
             console.log(err);
         } else {
-            const movies = results.map((curMovie)=>{
+            const movies = results.map((curMovie) => {
                 return {
                     ...curMovie,
                     image: `${req.imagePath}/${curMovie.image}`
@@ -50,9 +59,10 @@ const show = (req, res) => {
             connection.query(reviewSql, [id], (err, reviewResults) => {
 
                 res.json({
-                    data: { 
-                        ...movieResults[0], 
-                        image: `${req.protocol}://${req.get('host')}/img/movies_cover/${movieResults[0].title}.jpg`, reviews: reviewResults }
+                    data: {
+                        ...movieResults[0],
+                        image: `${req.protocol}://${req.get('host')}/img/movies_cover/${movieResults[0].image}`, reviews: reviewResults
+                    }
                 })
 
             })
@@ -61,6 +71,8 @@ const show = (req, res) => {
 
     })
 }
+
+
 
 
 

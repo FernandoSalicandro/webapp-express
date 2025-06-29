@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import connection from './data/movies_db.js';
 import router from './routers/movieRoutes.js';
 import notFound from './middleware/notFound.js';
@@ -8,8 +9,13 @@ import imagePath from './middleware/imagePath.js';
 const app = express();
 const port = process.env.SERVER_PORT;
 
+app.use(cors({
+    origin:process.env.FE_URL
+}));
+
 app.use(express.json());
 app.use(express.static('public'));
+
 
 //rotta per test
 
