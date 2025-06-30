@@ -4,39 +4,38 @@ import connection from '../data/movies_db.js';
 //index 
 const index = (req, res) => {
     const search = req.query.search?.toLowerCase();
+    const page = parseInt(req.query.page) || 1;
+    const elementPerPage = 4;
+    const offset = elementPerPage * (page - 1);
 
-    let sql = `
-                SELECT *
-                FROM movies
-                `
+    let sql = `SELECT * FROM movies`;
     const params = [];
 
-    if(search) {
-
-
-        sql += ` WHERE movies.title LIKE ?`
-        params.push(`%${search}%`)
+    if (search) {
+        sql += ` WHERE LOWER(title) LIKE ?`;
+        params.push(`%${search}%`);
     }
-    
+
+    sql += ` LIMIT ?, ?`;
+    params.push(offset, elementPerPage);
+
     connection.query(sql, params, (err, results) => {
         if (err) {
             console.log(err);
-        } else {
-            const movies = results.map((curMovie) => {
-                return {
-                    ...curMovie,
-                    image: `${req.imagePath}/${curMovie.image}`
-                };
-            })
-
-            res.json({
-                data: movies,
-            })
+            return res.status(500).json({ error: 'Database error' });
         }
 
+        const movies = results.map((curMovie) => {
+            return {
+                ...curMovie,
+                image: `${req.imagePath}/${curMovie.image}`
+            };
+        });
 
-    })
-}
+        res.json({ data: movies });
+    });
+};
+
 
 //show
 
@@ -71,11 +70,6 @@ const show = (req, res) => {
 
     })
 }
-
-
-
-
-
 
 
 export default { index, show }
