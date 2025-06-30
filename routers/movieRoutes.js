@@ -6,7 +6,7 @@ const router = express.Router()
 //rotta index
 router.get('/', controller.index)
 //rotta show
-router.get('/:id', controller.show)
+router.get('/:slug', controller.show)
 
 
 
