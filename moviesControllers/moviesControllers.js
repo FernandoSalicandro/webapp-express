@@ -70,42 +70,75 @@ const show = (req, res) => {
 
     })
 }
-//store movie
 
-const store = (req, res, next) => {
-    console.log("Creo film");
 
-    // Prendiamo i dati del film dal body della richiesta
+
+
+// Funzione di validazione separata
+const validateRequest = (req) => {
     const { title, director, genre, release_year, abstract } = req.body;
-    console.log(title, director, genre, release_year, abstract);
+    
+    // Verifica che tutti i campi richiesti esistano
+    if (!title || !director || !genre || !release_year || !abstract) {
+        return false;
+    }
 
+    // Verifica che i campi non siano stringhe vuote
+    if (title.trim() === '' || director.trim() === '' || genre.trim() === '') {
+        return false;
+    }
+
+    // Verifica l'anno
+    const currentYear = new Date().getFullYear();
+    if (isNaN(release_year) || release_year < 1895 || release_year > currentYear) {
+        return false;
+    }
+
+    // Verifica che ci sia un'immagine
+    if (!req.file) {
+        return false;
+    }
+
+    return true;
+};
+
+//store movie
+const store = (req, res, next) => {
+    // Controllo i dati
+    if (!validateRequest(req)) {
+        return res.status(400).json({
+            success: false,
+            message: "Dati errati"
+        });
+    }
+
+    const { title, director, genre, release_year, abstract } = req.body;
+    
     // Creiamo lo slug dal titolo
     const slug = slugify(title, {
         lower: true,
         strict: true,
     });
 
-    const image = req.file?.filename || null;
+    const image = req.file.filename;
 
     // Scriviamo la prepared statement query
     const sql = `
         INSERT INTO movies (slug, title, director, genre, release_year, abstract, image)
         VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
-    console.log(sql);
 
     // Eseguiamo la query
     connection.query(
         sql, 
         [slug, title, director, genre, release_year, abstract, image], 
         (err, results) => {
-            // Se c'è errore lo gestiamo
             if (err) {
                 return next(new Error(err));
             }
 
-            // Invio la risposta con il codice 201 e id e slug
             return res.status(201).json({
+                success: true,
                 id: results.insertId,
                 slug,
                 image
@@ -113,7 +146,6 @@ const store = (req, res, next) => {
         }
     );
 };
-
 //store review
 const storeReview = (req, res) => {
     const { movieId } = req.params;
