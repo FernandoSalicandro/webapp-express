@@ -1,11 +1,12 @@
 import connection from '../data/movies_db.js';
+import slugify from 'slugify';
 
 
 //index 
 const index = (req, res) => {
     const search = req.query.search?.toLowerCase();
     const page = parseInt(req.query.page) || 1;
-    const elementPerPage = 4;
+    const elementPerPage = 10;
     const offset = elementPerPage * (page - 1);
 
     let sql = `SELECT * FROM movies`;
@@ -38,7 +39,6 @@ const index = (req, res) => {
 
 
 //show
-
 const show = (req, res) => {
     const { slug } = req.params;
     const sql = `
@@ -70,7 +70,84 @@ const show = (req, res) => {
 
     })
 }
+//store movie
+
+const store = (req, res, next) => {
+    console.log("Creo film");
+
+    // Prendiamo i dati del film dal body della richiesta
+    const { title, director, genre, release_year, abstract } = req.body;
+    console.log(title, director, genre, release_year, abstract);
+
+    // Creiamo lo slug dal titolo
+    const slug = slugify(title, {
+        lower: true,
+        strict: true,
+    });
+
+    const image = req.file?.filename || null;
+
+    // Scriviamo la prepared statement query
+    const sql = `
+        INSERT INTO movies (slug, title, director, genre, release_year, abstract, image)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+    console.log(sql);
+
+    // Eseguiamo la query
+    connection.query(
+        sql, 
+        [slug, title, director, genre, release_year, abstract, image], 
+        (err, results) => {
+            // Se c'è errore lo gestiamo
+            if (err) {
+                return next(new Error(err));
+            }
+
+            // Invio la risposta con il codice 201 e id e slug
+            return res.status(201).json({
+                id: results.insertId,
+                slug,
+                image
+            });
+        }
+    );
+};
+
+//store review
+const storeReview = (req, res) => {
+    const { movieId } = req.params;
+    const { name, vote, text } = req.body;
+
+    if (!name || !vote) {
+        return res.status(400).json({ erro: 'Nome e Voto sono campi obbligatori' })
+    }
+
+    const sql = `INSERT INTO reviews (movie_id, name, vote, text)
+                 VALUES (?,?,?,?);
+                 `;
+
+    connection.query(sql, [movieId, name, vote, text], (err, results) => {
+        if (err) {
+            console.log(err)
+            return res.status(500).json({ error: 'Errore nel database' })
+        } 
+        res.status(201).json({
+        message: 'Review aggiunta con successo',
+        data: {
+            id: results.insertId,
+            movie_id : movieId,
+            name,
+            vote,
+            text,
+            created_at: new Date()
+        }
+    })
+    })
+
+}
+
+export default { index, show, storeReview, store }
 
 
-export default { index, show }
 
